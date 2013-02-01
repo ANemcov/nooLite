@@ -49,24 +49,24 @@ int main(int argc, char * argv[])
 		if(strcmp (argv[1],"-api")){      //first arg "-api" needed
 			if (strcmp (argv[1],"-help")==0)
 			{
-				printf("Using %s -api -command channel [level]\n", argv[0]);
-				printf("	-command may be:\n");
-				printf("		-on_ch - Switch channel ON\n");
-				printf("		-off_ch\n");
-				printf("		-sw_ch\n");
-				printf("		-set_ch\n");
-				printf("		-bind_ch\n");
-				printf("		-unbind_ch\n");
-				printf("		-preset\n");
-				printf("	chanel must be [1..8]\n");
-				printf("	level must be [0..100]\n");
+				printf("Using %s -api -<command> <channel> [<level>]\n", argv[0]);
+				printf("	<command> may be:\n");
+				printf("		-on_ch - Turn channel ON\n");
+				printf("		-off_ch - Turn channel OFF\n");
+				printf("		-sw_ch - Switch channel ON/OFF\n");
+				printf("		-set_ch - Set level for channel\n");
+				printf("		-bind_ch - Bind channel\n");
+				printf("		-unbind_ch - Unbind channel\n");
+				printf("		-preset - Activate preset\n");
+				printf("	<channel> must be [1..8]\n");
+				printf("	<level> must be [0..100] - using for -set_ch\n");
 				return -1;
 			}
-			printf("Неверно указан режим\nИспользование: %s -api [command channel [params]]\n", argv[0]);
+			printf("Неверно указан режим\nИспользование: %s -api -<command> <channel> [<level>]\n", argv[0]);
 			return -1;
 		}
 	} else {
-		printf("Не указан параметр API\r\nИспользование: %s -api [command channel [params]]\n", argv[0]);
+		printf("Не указан параметр API\r\nИспользование: %s -api -<command> <channel> [<level>]\n", argv[0]);
 		return -1;
 	}
 	
@@ -105,7 +105,7 @@ int main(int argc, char * argv[])
 			return -1;
 		}
 	} else {
-		printf("Не указана команда\nИспользование: %s -api [command channel [params]]\n", argv[0]);
+		printf("Не указана команда\nИспользование: %s -api -<command> <channel> [<level>]\n", argv[0]);
 		return -1;
 	}
 
@@ -113,12 +113,12 @@ int main(int argc, char * argv[])
 		channel	= atoi(argv[3]);
 		channel--;
 		if ((channel>7)||(channel<0)) {
-			printf("Неверно указан канал (1-8)\nИспользование: %s -api [command channel [params]]\n", argv[0]);
+			printf("Неверно указан канал (1-8)\nИспользование: %s -api -<command> <channel> [<level>]\n", argv[0]);
 			return -1;
 		}
 		COMMAND_ACTION[4] = channel;
 	} else {
-		printf("Не указан канал\nИспользование: %s -api [command channel [params]]\n", argv[0]);
+		printf("Не указан канал\nИспользование: %s -api -<command> <channel> [<level>]\n", argv[0]);
 		return -1;
 	}
 	
@@ -138,7 +138,7 @@ int main(int argc, char * argv[])
 			COMMAND_ACTION[5]= level;
 			COMMAND_ACTION[2]= 1;
 		} else {
-			printf("Не указан уровень \nИспользование: %s -api [command [params]]\n", argv[0]);
+			printf("Не указан уровень \nИспользование: %s -api -<command> <channel> [<level>]\n", argv[0]);
 			return -1;
 		}
 	}
