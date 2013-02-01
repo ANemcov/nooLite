@@ -20,28 +20,48 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#define DEV_VID 0x5824
-#define DEV_PID 0x1503
+#define DEV_VID 0x16c0 //0x5824
+#define DEV_PID 0x05df //0x1503
 #define DEV_CONFIG 1
 #define DEV_INTF 0
 #define EP_IN 0x81
 #define EP_OUT 0x01
 
-unsigned char COMMAND_START[8] = {0x1F,0x1E,0x92,0x7C,0xB8,0x1,0x14,0x03};
-unsigned char COMMAND_FINISH[8] = {0x00,0x1E,0x92,0x7C,0xB8,0x1,0x14,0x04};
-unsigned char COMMAND_ACTION[8] = {0x00,0x00,0xaa,0x00,0x0,0x1,0x14,0x05};
+unsigned char COMMAND_ACTION[8] = {0x30,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; //{80,0x00,0xaa,0x00,0x0,0x1,0x14,0x05}
 
 int main(int argc, char * argv[])
 {
 	libusb_device_handle * handle;
-	//int ret; 
+	
+	int i, ret; 
 	unsigned int level;
-	unsigned char command[1], buf[8];
-	char channel, param;
+	unsigned char command[1], buf[8], channel;
+	char param;
 	
 	//Arg Control
+
+	if (argc == 1) {
+		printf("Using: %s -help\n", argv[0]);
+		return -1;
+	}
+
 	if (argc >= 2) {
-		if(strcmp (argv[1],"-api")){
+		if(strcmp (argv[1],"-api")){      //first arg "-api" needed
+			if (strcmp (argv[1],"-help")==0)
+			{
+				printf("Using %s -api -command channel [level]\n", argv[0]);
+				printf("	-command may be:\n");
+				printf("		-on_ch - Switch channel ON\n");
+				printf("		-off_ch\n");
+				printf("		-sw_ch\n");
+				printf("		-set_ch\n");
+				printf("		-bind_ch\n");
+				printf("		-unbind_ch\n");
+				printf("		-preset\n");
+				printf("	chanel must be [1..8]\n");
+				printf("	level must be [0..100]\n");
+				return -1;
+			}
 			printf("Неверно указан режим\nИспользование: %s -api [command channel [params]]\n", argv[0]);
 			return -1;
 		}
@@ -51,33 +71,33 @@ int main(int argc, char * argv[])
 	}
 	
 	if (argc >= 3) {
-		if (strcmp (argv[2],"-on_ch")==0)  //Включить канал
+		if (strcmp (argv[2],"-on_ch")==0)  //Set cnannel ON
 		{
-			command[0]=2; 
+			COMMAND_ACTION[1] = 2; 
 		} 
-		else if (strcmp(argv[2],"-off_ch")==0) //Выключить канал
+		else if (strcmp(argv[2],"-off_ch")==0) //Set channel OFF
 		{
-			command[0]=0;
+			COMMAND_ACTION[1] = 0;
 		} 
-		else if (strcmp(argv[2],"-sw_ch")==0) //Переключить канал
+		else if (strcmp(argv[2],"-sw_ch")==0) //Switch channel ON/OFF
 		{
-			command[0]=4;
+			COMMAND_ACTION[1] = 4;
 		} 
-		else if (strcmp(argv[2],"-set_ch")==0) //Установить уровень
+		else if (strcmp(argv[2],"-set_ch")==0) //Set level on channel - needed arg "level"
 		{
-			command[0]=6; 
+			COMMAND_ACTION[1] = 6; 
 		} 
 		else if (strcmp(argv[2],"-bind_ch")==0) //Привязать канал
 		{
-			command[0]=15;
+			COMMAND_ACTION[1] = 15;
 		} 
 		else if (strcmp(argv[2],"-unbind_ch")==0) //отвязать канал
 		{
-			command[0]=9;
+			COMMAND_ACTION[1] = 9;
 		} 
 		else if (strcmp(argv[2],"-preset")==0) //Вызвать сценарий
 		{
-			command[0]=7;
+			COMMAND_ACTION[1] = 7;
 		} 
 		else 
 		{
@@ -90,13 +110,19 @@ int main(int argc, char * argv[])
 	}
 
 	if (argc >= 4) {
-		param	= atoi(argv[3]);
+		channel	= atoi(argv[3]);
+		channel--;
+		if ((channel>7)||(channel<0)) {
+			printf("Неверно указан канал (1-8)\nИспользование: %s -api [command channel [params]]\n", argv[0]);
+			return -1;
+		}
+		COMMAND_ACTION[4] = channel;
 	} else {
 		printf("Не указан канал\nИспользование: %s -api [command channel [params]]\n", argv[0]);
 		return -1;
 	}
 	
-	if (command[0]==6)
+	if (COMMAND_ACTION[1]==6)
 	{
 		if (argc >= 5) {
 			level	= atoi(argv[4]);
@@ -109,15 +135,15 @@ int main(int argc, char * argv[])
 				level=0;
 			}
 			level=(int)(34+(float)level*1.23);
-			printf("LEVEL %i\n", level);
+			COMMAND_ACTION[5]= level;
+			COMMAND_ACTION[2]= 1;
 		} else {
 			printf("Не указан уровень \nИспользование: %s -api [command [params]]\n", argv[0]);
 			return -1;
 		}
 	}
-	
-/* Пока закомментируем работу с устройством
 
+//Prepare Command string
 	libusb_init(NULL);
 	libusb_set_debug(NULL, 3);
 	handle = libusb_open_device_with_vid_pid(NULL, DEV_VID, DEV_PID);
@@ -146,26 +172,14 @@ int main(int argc, char * argv[])
 		return 0;
 	}
 	
+	//0x9 - номер запроса
+	//0x300 - значение запроса - их надо получить из мониторинга
 
-	ret = libusb_control_transfer(handle, LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT, 0x9, 0x200, 0, COMMAND_1, 8, 100);
-	libusb_interrupt_transfer(handle, EP_IN, buf, 8, &ret, 100);
-	ret = libusb_control_transfer(handle, LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT, 0x9, 0x200, 0, COMMAND_2, 8, 100);
-	libusb_interrupt_transfer(handle, EP_IN, buf, 8, &ret, 100);
-	COMMAND_ON[0] = r;
-	COMMAND_ON[1] = g;
-	COMMAND_ON[2] = b;
-	ret = libusb_control_transfer(handle, LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT, 0x9, 0x200, 0, COMMAND_ON, 8, 100);
-	buf[7] = 0;
-	libusb_interrupt_transfer(handle, EP_IN, buf, 8, &ret, 100);
-	if (buf[7] != 1) {
-		printf("Сбой в управлении устройством\n");
-		libusb_close(handle);
-		libusb_exit(NULL);
-		return 0;
-	}
+	ret = libusb_control_transfer(handle, LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_OUT, 0x9, 0x300, 0, COMMAND_ACTION, 8, 100);
+
 	libusb_attach_kernel_driver(handle, DEV_INTF);
 	libusb_close(handle);
 	libusb_exit(NULL);
-	*/
+	
 	return 0;
 }
