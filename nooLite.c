@@ -57,6 +57,7 @@ int main(int argc, char * argv[])
 				printf("		-set_ch - Set level for channel\n");
 				printf("		-bind_ch - Bind channel\n");
 				printf("		-unbind_ch - Unbind channel\n");
+				printf("		-rec_preset - Record preset\n");
 				printf("		-preset - Activate preset\n");
 				printf("	<channel> must be [1..8]\n");
 				printf("	<level> must be [0..100] - using for -set_ch\n");
@@ -94,6 +95,10 @@ int main(int argc, char * argv[])
 		else if (strcmp(argv[2],"-unbind_ch")==0) //отвязать канал
 		{
 			COMMAND_ACTION[1] = 9;
+		} 
+		else if (strcmp(argv[2],"-rec_preset")==0) //Записать сценарий
+		{
+			COMMAND_ACTION[1] = 8;
 		} 
 		else if (strcmp(argv[2],"-preset")==0) //Вызвать сценарий
 		{
